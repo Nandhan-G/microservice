@@ -36,9 +36,8 @@ jobs:
           # FIX: strip_components: 2 removes 'demo-backend1/target/'
           strip_components: 2
 
-           # 5. SSH into EC2 and Restart Application
-          # 5. SSH into EC2 and Restart Application
-          - name: Restart Application on EC2
+      # 5. SSH into EC2 and Restart Application
+      - name: Restart Application on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
