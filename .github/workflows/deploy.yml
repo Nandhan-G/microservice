@@ -8,7 +8,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     # Stop the entire job if it hangs for more than 10 minutes
-    timeout-minutes: 10 
+    timeout-minutes: 30 
 
     steps:
       # 1. Checkout the code
