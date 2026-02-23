@@ -16,11 +16,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-          cache-dependency-path: 'microservice/demo-backend1/pom.xml'
+          # FIX: Removed 'microservice/' prefix as the runner is already in the repo root
+          cache-dependency-path: 'demo-backend1/pom.xml'
 
-      # 1. Build the Application
+      # 1. Build using the correct subfolder path
       - name: Build with Maven
-        run: mvn clean package -DskipTests -f microservice/demo-backend1/pom.xml
+        run: mvn clean package -DskipTests -f demo-backend1/pom.xml
 
       # 2. Copy JAR file to EC2
       - name: Copy JAR to EC2
@@ -29,14 +30,13 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          # FIX: Specify the exact path to the JAR file
-          source: "microservice/demo-backend1/target/*.jar"
+          # FIX: Path relative to repo root
+          source: "demo-backend1/target/*.jar"
           target: "/home/ec2-user/app"
-          # FIX: strip_components: 3 removes 'microservice/demo-backend1/target/' 
-          # so the JAR drops directly into '/home/ec2-user/app'
-          strip_components: 3
+          # FIX: strip_components: 2 removes 'demo-backend1/target/'
+          strip_components: 2
 
-      # 3. SSH into EC2 and Restart
+      # 3. SSH and Restart
       - name: Restart Application on EC2
         uses: appleboy/ssh-action@master
         with:
@@ -44,11 +44,6 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # Create directory if it doesn't exist
             mkdir -p /home/ec2-user/app
-            
-            # Stop existing java process
             sudo pkill -f java || true
-
-            # Run the JAR (it's now directly in the /app folder)
             nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
