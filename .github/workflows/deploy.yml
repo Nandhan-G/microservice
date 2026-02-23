@@ -48,13 +48,16 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: 22
           command_timeout: 5m
+          request_pty: true
           script: |
             mkdir -p /home/ec2-user/app
-            
-            # Kill previous Spring Boot process
-            sudo pkill -f java || true
-            
+
+            # Kill previous Spring Boot process (no sudo needed for ec2-user)
+            pkill -f java || true
+
             # Start new JAR in background
             nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
-            
+
             sleep 5
+
+            echo "Deployment successful"
