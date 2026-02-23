@@ -38,18 +38,17 @@ jobs:
 
            # 5. SSH into EC2 and Restart Application
           # 5. SSH into EC2 and Restart Application
-      - name: Restart Application on EC2
+          - name: Restart Application on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          port: 22
-          timeout: 60s
-          command_timeout: 5m
+          # FIX: This will stop the action quickly if the IP/Firewall is wrong
+          connect_timeout: 30s
           script: |
             mkdir -p /home/ec2-user/app
             sudo pkill -f java || true
             nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
-            sleep 5
+
 
