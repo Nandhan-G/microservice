@@ -7,10 +7,10 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 
+    timeout-minutes: 30
 
     steps:
-      # 1. Checkout the code
+      # 1. Checkout code
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -39,7 +39,7 @@ jobs:
           target: "/home/ec2-user/app"
           strip_components: 2
 
-      # 5. SSH into EC2 and Restart Application
+      # 5. SSH into EC2 and restart Spring Boot safely
       - name: Restart Application on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -53,10 +53,7 @@ jobs:
             mkdir -p /home/ec2-user/app
 
             echo "Stopping existing Spring Boot app..."
-
-            # Find running JAR from app directory only
             PID=$(pgrep -f "/home/ec2-user/app/.*\.jar") || true
-
             if [ -n "$PID" ]; then
               echo "Killing process $PID"
               kill -9 $PID
@@ -65,10 +62,8 @@ jobs:
               echo "No existing app running"
             fi
 
-            echo "Starting new Spring Boot app..."
-
-            nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
+            echo "Starting new Spring Boot app with memory limits..."
+            nohup java -Xms128m -Xmx384m -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
 
             sleep 5
-
             echo "Deployment successful"
