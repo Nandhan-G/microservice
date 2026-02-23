@@ -7,7 +7,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    # Stop the entire job if it hangs for more than 10 minutes
     timeout-minutes: 30 
 
     steps:
@@ -22,48 +21,40 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-          # Matches your subfolder structure
           cache-dependency-path: 'demo-backend1/pom.xml'
 
-      # 3. Build the JAR using the specific subfolder POM
+      # 3. Build the JAR
       - name: Build with Maven
         run: mvn clean package -DskipTests -f demo-backend1/pom.xml
 
-      # 4. Copy JAR to EC2 (Using SCP)
+      # 4. Copy JAR to EC2
       - name: Copy JAR to EC2
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           port: 22
-          # Use 'timeout' (not connect_timeout) to stop the loop if blocked
-          timeout: 40s
           source: "demo-backend1/target/*.jar"
           target: "/home/ec2-user/app"
-          # Removes 'demo-backend1/target/' so JAR is directly in '/app'
           strip_components: 2
 
       # 5. SSH into EC2 and Restart Application
       - name: Restart Application on EC2
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           port: 22
-          # Use 'timeout' to stop the action if the server doesn't respond
-          timeout: 40s
           command_timeout: 5m
           script: |
-            # 1. Create directory if it doesn't exist
             mkdir -p /home/ec2-user/app
             
-            # 2. Kill the previous java process
+            # Kill previous Spring Boot process
             sudo pkill -f java || true
             
-            # 3. Run the new JAR from the root of the app folder
+            # Start new JAR in background
             nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
             
-            # 4. Allow a moment for the process to detach
             sleep 5
