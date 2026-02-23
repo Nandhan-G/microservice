@@ -17,7 +17,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
           # Point to the actual nested pom.xml location
-          cache-dependency-path: 'microservice/demo-backend1/pom.xml'
+          cache-dependency-path: 'microservice/demo-backend1/'
 
       # 1. Build the project using the subfolder POM
       - name: Build with Maven
