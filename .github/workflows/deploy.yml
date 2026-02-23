@@ -16,29 +16,27 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-          # Point to the actual nested pom.xml location
-          cache-dependency-path: 'microservice/demo-backend1/'
+          cache-dependency-path: 'microservice/demo-backend1/pom.xml'
 
-      # 1. Build the project using the subfolder POM
+      # 1. Build the Application
       - name: Build with Maven
-        # -f tells Maven where to find the project file
-        run: mvn clean package -DskipTests -f microservice/demo-backend1/
+        run: mvn clean package -DskipTests -f microservice/demo-backend1/pom.xml
 
-      # 2. Copy the resulting JAR to EC2
+      # 2. Copy JAR file to EC2
       - name: Copy JAR to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          # SOURCE: Path where Maven generated the JAR file
+          # FIX: Specify the exact path to the JAR file
           source: "microservice/demo-backend1/target/*.jar"
           target: "/home/ec2-user/app"
-          # STRIP: Removes "microservice/demo-backend1/target/" from the remote path
-          # This ensures the JAR is placed directly in /home/ec2-user/app/
+          # FIX: strip_components: 3 removes 'microservice/demo-backend1/target/' 
+          # so the JAR drops directly into '/home/ec2-user/app'
           strip_components: 3
 
-      # 3. Restart the application on EC2
+      # 3. SSH into EC2 and Restart
       - name: Restart Application on EC2
         uses: appleboy/ssh-action@master
         with:
@@ -46,7 +44,11 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # Stop the existing process
+            # Create directory if it doesn't exist
+            mkdir -p /home/ec2-user/app
+            
+            # Stop existing java process
             sudo pkill -f java || true
-            # Run the new JAR located directly in the target folder
+
+            # Run the JAR (it's now directly in the /app folder)
             nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
