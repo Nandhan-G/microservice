@@ -22,7 +22,7 @@ jobs:
       # 1. Build the project using the subfolder POM
       - name: Build with Maven
         # -f tells Maven where to find the project file
-        run: mvn clean package -DskipTests -f microservice/demo-backend1/pom.xml
+        run: mvn clean package -DskipTests -f microservice/demo-backend1/
 
       # 2. Copy the resulting JAR to EC2
       - name: Copy JAR to EC2
