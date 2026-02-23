@@ -36,6 +36,20 @@ jobs:
           # FIX: strip_components: 2 removes 'demo-backend1/target/'
           strip_components: 2
 
+                # 4. Copy JAR file to EC2 using SCP
+      - name: Copy JAR to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          # FIX: Add a timeout so it doesn't loop forever
+          timeout: 30s
+          source: "demo-backend1/target/*.jar"
+          target: "/home/ec2-user/app"
+          strip_components: 2
+
+
       # 5. SSH into EC2 and Restart Application
       - name: Restart Application on EC2
         uses: appleboy/ssh-action@master
