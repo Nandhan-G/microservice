@@ -15,29 +15,30 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          # Tell the setup-java action where to find the pom.xml for caching
           cache: maven
-          cache-dependency-path: 'microservice/demo-backend1'
+          # Point to the actual nested pom.xml location
+          cache-dependency-path: 'microservice/demo-backend1/pom.xml'
 
-      # 3. Build the Application from the subfolder
+      # 1. Build the project using the subfolder POM
       - name: Build with Maven
-        # Use -f to point to the specific pom.xml location
-        run: mvn clean package -DskipTests -f file/file1/pom.xml
+        # -f tells Maven where to find the project file
+        run: mvn clean package -DskipTests -f microservice/demo-backend1/pom.xml
 
-      # 4. Copy JAR file to EC2 using SCP
+      # 2. Copy the resulting JAR to EC2
       - name: Copy JAR to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          # Path must match where Maven generated the artifact
-          source: "file/file1/target/*.jar"
+          # SOURCE: Path where Maven generated the JAR file
+          source: "microservice/demo-backend1/target/*.jar"
           target: "/home/ec2-user/app"
-          # strip_components: 3 removes 'file/file1/target/' so only the JAR is uploaded
+          # STRIP: Removes "microservice/demo-backend1/target/" from the remote path
+          # This ensures the JAR is placed directly in /home/ec2-user/app/
           strip_components: 3
 
-      # 5. SSH into EC2 and Restart Application
+      # 3. Restart the application on EC2
       - name: Restart Application on EC2
         uses: appleboy/ssh-action@master
         with:
@@ -45,6 +46,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
+            # Stop the existing process
             sudo pkill -f java || true
-            # The jar is now directly in /home/ec2-user/app because of strip_components
+            # Run the new JAR located directly in the target folder
             nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 &
